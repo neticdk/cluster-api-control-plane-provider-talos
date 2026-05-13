@@ -14,6 +14,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -80,9 +81,14 @@ func TestReconcileMachineTemplateStatePropagatesMachineFieldsInPlace(t *testing.
 		},
 	}
 
-	machines := &clusterv1.MachineList{Items: []clusterv1.Machine{*machine.DeepCopy()}}
+	machines := collections.FromMachines(machine.DeepCopy())
+	cp := &ControlPlane{
+		Cluster:  cluster,
+		TCP:      tcp,
+		Machines: machines,
+	}
 
-	if err := reconciler.reconcileMachineTemplateState(context.Background(), cluster, tcp, machines); err != nil {
+	if err := reconciler.reconcileMachineTemplateState(context.Background(), cp); err != nil {
 		t.Fatalf("reconcileMachineTemplateState failed: %v", err)
 	}
 

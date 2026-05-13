@@ -10,7 +10,6 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
-	cabptv1 "github.com/siderolabs/cluster-api-bootstrap-provider-talos/api/v1alpha3"
 	controlplanev1 "github.com/siderolabs/cluster-api-control-plane-provider-talos/api/v1beta1"
 	talosclient "github.com/siderolabs/talos/pkg/machinery/client"
 	talosconfig "github.com/siderolabs/talos/pkg/machinery/client/config"
@@ -55,16 +54,14 @@ func (r *TalosControlPlaneReconciler) talosconfigForMachines(ctx context.Context
 	}
 
 	if !reflect.ValueOf(tcp.Spec.ControlPlaneConfig.InitConfig).IsZero() {
-		return r.talosconfigFromWorkloadCluster(ctx, client.ObjectKey{Namespace: tcp.GetNamespace(), Name: clusterName}, machines...)
+		return r.talosconfigFromWorkloadCluster(ctx, tcp, client.ObjectKey{Namespace: tcp.GetNamespace(), Name: clusterName}, machines...)
 	}
 
 	addrList := []string{}
 
-	var (
-		talosconfigSecret corev1.Secret
-	)
+	var talosconfigSecret corev1.Secret
 
-	if err := r.Client.Get(ctx,
+	if err := r.Get(ctx,
 		types.NamespacedName{
 			Namespace: tcp.GetNamespace(),
 			Name:      clusterName + "-talosconfig",
@@ -104,7 +101,7 @@ func (r *TalosControlPlaneReconciler) talosconfigForMachines(ctx context.Context
 }
 
 // talosconfigFromWorkloadCluster gets talosconfig and populates endoints using workload cluster nodes.
-func (r *TalosControlPlaneReconciler) talosconfigFromWorkloadCluster(ctx context.Context, cluster client.ObjectKey, machines ...clusterv1.Machine) (*talosclient.Client, error) {
+func (r *TalosControlPlaneReconciler) talosconfigFromWorkloadCluster(ctx context.Context, tcp *controlplanev1.TalosControlPlane, cluster client.ObjectKey, machines ...clusterv1.Machine) (*talosclient.Client, error) {
 	if len(machines) == 0 {
 		return nil, fmt.Errorf("at least one machine should be provided")
 	}
@@ -142,31 +139,24 @@ func (r *TalosControlPlaneReconciler) talosconfigFromWorkloadCluster(ctx context
 		}
 
 		if t == nil {
-			var (
-				cfgs  cabptv1.TalosConfigList
-				found *cabptv1.TalosConfig
-			)
+			var talosconfigSecret corev1.Secret
 
-			// find talosconfig in the machine's namespace
-			err = r.Client.List(ctx, &cfgs, client.InNamespace(machine.Namespace))
-			if err != nil {
+			if err := r.Get(ctx,
+				types.NamespacedName{
+					Namespace: tcp.GetNamespace(),
+					Name:      cluster.Name + "-talosconfig",
+				},
+				&talosconfigSecret,
+			); err != nil {
 				return nil, err
 			}
 
-			for _, cfg := range cfgs.Items {
-				for _, ref := range cfg.OwnerReferences {
-					if ref.Kind == "Machine" && ref.Name == machine.Name {
-						found = &cfg
-						break
-					}
-				}
+			data, ok := talosconfigSecret.Data["talosconfig"]
+			if !ok {
+				return nil, fmt.Errorf("talosconfig secret %s/%s does not contain 'talosconfig' key", talosconfigSecret.Namespace, talosconfigSecret.Name)
 			}
 
-			if found == nil {
-				return nil, fmt.Errorf("failed to find TalosConfig for %q", machine.Name)
-			}
-
-			t, err = talosconfig.FromString(found.Status.TalosConfig)
+			t, err = talosconfig.FromBytes(data)
 			if err != nil {
 				return nil, err
 			}

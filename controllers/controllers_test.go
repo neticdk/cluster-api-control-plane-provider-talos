@@ -11,7 +11,7 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	bootstrapv1alpha3 "github.com/siderolabs/cluster-api-bootstrap-provider-talos/api/v1alpha3"
+	bootstrapv1beta1 "github.com/siderolabs/cluster-api-bootstrap-provider-talos/api/v1beta1"
 	"github.com/siderolabs/talos/pkg/machinery/api/common"
 	"github.com/siderolabs/talos/pkg/machinery/api/machine"
 	"github.com/siderolabs/talos/pkg/machinery/config"
@@ -572,7 +572,7 @@ func (suite *ControllersSuite) TestRollingUpdate() {
 	}, time.Minute).Should(Succeed())
 
 	for _, machine := range suite.getMachines(fakeClient, cluster) {
-		talosconfig := &bootstrapv1alpha3.TalosConfig{}
+		talosconfig := &bootstrapv1beta1.TalosConfig{}
 
 		g.Expect(fakeClient.Get(suite.ctx, client.ObjectKey{Name: machine.Spec.Bootstrap.ConfigRef.Name, Namespace: machine.Namespace}, talosconfig)).NotTo(HaveOccurred())
 
@@ -982,6 +982,198 @@ func (suite *ControllersSuite) setupCluster(fakeClient client.Client, ns string,
 	g.Expect(fakeClient.Create(suite.ctx, tcp)).To(Succeed())
 
 	return cluster, tcp, genericInfrastructureMachineTemplate
+}
+
+func (suite *ControllersSuite) TestReconcileMachineConditions() {
+	g := NewWithT(suite.T())
+	fakeClient := newFakeClient()
+
+	cluster, tcp, _ := suite.setupCluster(fakeClient, "test-machine-conditions", ptr.To[int32](3))
+
+	// Case 1: Machine is Ready and UpToDate
+	m1, _ := createMachineNodePair("m1", cluster, tcp, true, "1.2.3.4")
+	m1.Spec.Version = tcp.Spec.Version
+	m1.Spec.Bootstrap.ConfigRef = clusterv1.ContractVersionedObjectReference{
+		APIGroup: bootstrapv1beta1.GroupVersion.Group,
+		Kind:     "TalosConfig",
+		Name:     "m1-config",
+	}
+	conditions.Set(m1, metav1.Condition{
+		Type:   string(clusterv1.ReadyCondition),
+		Status: metav1.ConditionTrue,
+		Reason: "Ready",
+	})
+
+	infra1 := &unstructured.Unstructured{}
+	infra1.SetGroupVersionKind(InfrastructureGroupVersion.WithKind(GenericInfrastructureMachineKind))
+	infra1.SetName(m1.Name)
+	infra1.SetNamespace(cluster.Namespace)
+	infra1.SetAnnotations(map[string]string{
+		clusterv1.TemplateClonedFromNameAnnotation:      tcp.Spec.MachineTemplate.Spec.InfrastructureRef.Name,
+		clusterv1.TemplateClonedFromGroupKindAnnotation: InfrastructureGroupVersion.WithKind(GenericInfrastructureMachineKind).GroupKind().String(),
+	})
+
+	config1 := &bootstrapv1beta1.TalosConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: cluster.Namespace,
+			Name:      "m1-config",
+		},
+		Spec: tcp.Spec.ControlPlaneConfig.ControlPlaneConfig,
+	}
+
+	// Case 2: Machine is Not Ready but UpToDate
+	m2, _ := createMachineNodePair("m2", cluster, tcp, false, "1.2.3.5")
+	m2.Spec.Version = tcp.Spec.Version
+	m2.Spec.Bootstrap.ConfigRef = clusterv1.ContractVersionedObjectReference{
+		APIGroup: bootstrapv1beta1.GroupVersion.Group,
+		Kind:     "TalosConfig",
+		Name:     "m2-config",
+	}
+	conditions.Set(m2, metav1.Condition{
+		Type:   string(clusterv1.ReadyCondition),
+		Status: metav1.ConditionFalse,
+		Reason: "NotReady",
+	})
+
+	infra2 := infra1.DeepCopy()
+	infra2.SetName(m2.Name)
+
+	config2 := config1.DeepCopy()
+	config2.SetName("m2-config")
+
+	// Case 3: Machine is Ready but Not UpToDate (outdated version)
+	m3, _ := createMachineNodePair("m3", cluster, tcp, true, "1.2.3.6")
+	m3.Spec.Version = "v1.29.0"
+	m3.Spec.Bootstrap.ConfigRef = clusterv1.ContractVersionedObjectReference{
+		APIGroup: bootstrapv1beta1.GroupVersion.Group,
+		Kind:     "TalosConfig",
+		Name:     "m3-config",
+	}
+	conditions.Set(m3, metav1.Condition{
+		Type:   string(clusterv1.ReadyCondition),
+		Status: metav1.ConditionTrue,
+		Reason: "Ready",
+	})
+
+	infra3 := infra1.DeepCopy()
+	infra3.SetName(m3.Name)
+
+	config3 := config1.DeepCopy()
+	config3.SetName("m3-config")
+
+	g.Expect(fakeClient.Create(suite.ctx, m1)).To(Succeed())
+	g.Expect(fakeClient.Create(suite.ctx, m2)).To(Succeed())
+	g.Expect(fakeClient.Create(suite.ctx, m3)).To(Succeed())
+	g.Expect(fakeClient.Create(suite.ctx, infra1)).To(Succeed())
+	g.Expect(fakeClient.Create(suite.ctx, infra2)).To(Succeed())
+	g.Expect(fakeClient.Create(suite.ctx, infra3)).To(Succeed())
+	g.Expect(fakeClient.Create(suite.ctx, config1)).To(Succeed())
+	g.Expect(fakeClient.Create(suite.ctx, config2)).To(Succeed())
+	g.Expect(fakeClient.Create(suite.ctx, config3)).To(Succeed())
+
+	r := newReconciler(fakeClient)
+
+	machineList := &clusterv1.MachineList{
+		Items: []clusterv1.Machine{*m1, *m2, *m3},
+	}
+
+	result, err := r.ReconcileMachineConditions(suite.ctx, cluster, tcp, machineList)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(result).To(Equal(ctrl.Result{}))
+
+	// Verify m1: UpToDate=True
+	updatedM1 := &clusterv1.Machine{}
+	g.Expect(fakeClient.Get(suite.ctx, client.ObjectKeyFromObject(m1), updatedM1)).To(Succeed())
+	g.Expect(conditions.IsTrue(updatedM1, clusterv1.MachineUpToDateCondition)).To(BeTrue())
+
+	// Verify m2: UpToDate=True
+	updatedM2 := &clusterv1.Machine{}
+	g.Expect(fakeClient.Get(suite.ctx, client.ObjectKeyFromObject(m2), updatedM2)).To(Succeed())
+	g.Expect(conditions.IsTrue(updatedM2, clusterv1.MachineUpToDateCondition)).To(BeTrue())
+
+	// Verify m3: UpToDate=False
+	updatedM3 := &clusterv1.Machine{}
+	g.Expect(fakeClient.Get(suite.ctx, client.ObjectKeyFromObject(m3), updatedM3)).To(Succeed())
+	g.Expect(conditions.IsFalse(updatedM3, clusterv1.MachineUpToDateCondition)).To(BeTrue())
+	g.Expect(conditions.GetReason(updatedM3, clusterv1.MachineUpToDateCondition)).To(Equal(clusterv1.MachineNotUpToDateReason))
+
+	// Verify TalosControlPlane: MachinesAllReady=False (because m2 is NotReady)
+	g.Expect(conditions.IsFalse(tcp, string(controlplanev1.MachinesAllReadyCondition))).To(BeTrue())
+}
+
+func (suite *ControllersSuite) TestReconcileMachineConditionsEmptyMachines() {
+	g := NewWithT(suite.T())
+	fakeClient := newFakeClient()
+
+	cluster, tcp, _ := suite.setupCluster(fakeClient, "test-machine-conditions-empty", ptr.To[int32](3))
+
+	r := newReconciler(fakeClient)
+
+	machineList := &clusterv1.MachineList{
+		Items: []clusterv1.Machine{},
+	}
+
+	result, err := r.ReconcileMachineConditions(suite.ctx, cluster, tcp, machineList)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(result).To(Equal(ctrl.Result{}))
+
+	// Verify TalosControlPlane: MachinesAllReady=False with WaitingForMachines reason
+	g.Expect(conditions.IsFalse(tcp, string(controlplanev1.MachinesAllReadyCondition))).To(BeTrue())
+	g.Expect(conditions.GetReason(tcp, string(controlplanev1.MachinesAllReadyCondition))).To(Equal(controlplanev1.WaitingForMachinesReason))
+}
+
+func (suite *ControllersSuite) TestTalosconfigForMachinesWithInitConfig() {
+	g := NewWithT(suite.T())
+	fakeClient := newFakeClient()
+
+	cluster, tcp, _ := suite.setupCluster(fakeClient, "test-talosconfig-init", ptr.To[int32](1))
+
+	patchHelper, err := patch.NewHelper(tcp, fakeClient)
+	g.Expect(err).To(BeNil())
+
+	tcp.Spec.ControlPlaneConfig.InitConfig = bootstrapv1beta1.TalosConfigSpec{
+		Data: "some-init-config",
+	}
+	g.Expect(patchHelper.Patch(suite.ctx, tcp)).To(Succeed())
+
+	machine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: cluster.Namespace,
+			Name:      "machine-1",
+		},
+		Status: clusterv1.MachineStatus{
+			NodeRef: clusterv1.MachineNodeReference{
+				Name: "node-1",
+			},
+		},
+	}
+
+	node := &corev1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "node-1",
+		},
+		Status: corev1.NodeStatus{
+			Addresses: []corev1.NodeAddress{
+				{
+					Type:    corev1.NodeInternalIP,
+					Address: "10.0.0.1",
+				},
+			},
+		},
+	}
+
+	// Create a minimal talosconfig secret
+	g.Expect(createSecrets(suite.ctx, fakeClient, cluster, suite.secretsBundle, "10.0.0.1")).To(Succeed())
+
+	g.Expect(fakeClient.Create(suite.ctx, machine)).To(Succeed())
+	g.Expect(fakeClient.Create(suite.ctx, node)).To(Succeed())
+
+	r := newReconciler(fakeClient, withCluster(util.ObjectKey(cluster)))
+
+	// This should call talosconfigFromWorkloadCluster because InitConfig is set.
+	tClient, err := r.TalosconfigForMachines(suite.ctx, tcp, *machine)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(tClient).ToNot(BeNil())
 }
 
 func TestSuite(t *testing.T) {

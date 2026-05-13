@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"reflect"
 
+	cabptv1alpha3 "github.com/siderolabs/cluster-api-bootstrap-provider-talos/api/v1alpha3"
+	cabptv1beta1 "github.com/siderolabs/cluster-api-bootstrap-provider-talos/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachineryconversion "k8s.io/apimachinery/pkg/conversion"
@@ -122,6 +124,14 @@ func Convert_v1alpha3_TalosControlPlaneSpec_To_v1beta1_TalosControlPlaneSpec(in 
 // annotation in ConvertFrom.
 func Convert_v1beta1_TalosControlPlaneSpec_To_v1alpha3_TalosControlPlaneSpec(in *cpv1beta1.TalosControlPlaneSpec, out *TalosControlPlaneSpec, s apimachineryconversion.Scope) error {
 	return autoConvert_v1beta1_TalosControlPlaneSpec_To_v1alpha3_TalosControlPlaneSpec(in, out, s)
+}
+
+func Convert_v1alpha3_TalosConfigSpec_To_v1beta1_TalosConfigSpec(in *cabptv1alpha3.TalosConfigSpec, out *cabptv1beta1.TalosConfigSpec, s apimachineryconversion.Scope) error {
+	return cabptv1alpha3.Convert_v1alpha3_TalosConfigSpec_To_v1beta1_TalosConfigSpec(in, out, s)
+}
+
+func Convert_v1beta1_TalosConfigSpec_To_v1alpha3_TalosConfigSpec(in *cabptv1beta1.TalosConfigSpec, out *cabptv1alpha3.TalosConfigSpec, s apimachineryconversion.Scope) error {
+	return cabptv1alpha3.Convert_v1beta1_TalosConfigSpec_To_v1alpha3_TalosConfigSpec(in, out, s)
 }
 
 func Convert_v1alpha3_TalosControlPlaneStatus_To_v1beta1_TalosControlPlaneStatus(in *TalosControlPlaneStatus, out *cpv1beta1.TalosControlPlaneStatus, s apimachineryconversion.Scope) error {

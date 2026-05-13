@@ -14,7 +14,7 @@ FROM ghcr.io/siderolabs/fhs:${PKGS} AS pkg-fhs
 # code
 
 FROM --platform=${BUILDPLATFORM} ${TOOLS} AS build
-ENV GOTOOLCHAIN=local
+ENV GOTOOLCHAIN=auto
 ENV CGO_ENABLED=0
 ENV GO111MODULE=on
 ENV GOPROXY=https://proxy.golang.org
@@ -24,9 +24,9 @@ SHELL ["/bin/bash", "-c"]
 ARG CONTROLLER_GEN_VERSION
 ARG CONVERSION_GEN_VERSION
 RUN --mount=type=cache,target=/.cache go install sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VERSION} \
-  && mv /root/go/bin/controller-gen /usr/bin/controller-gen
+    && mv /root/go/bin/controller-gen /usr/bin/controller-gen
 RUN --mount=type=cache,target=/.cache go install k8s.io/code-generator/cmd/conversion-gen@${CONVERSION_GEN_VERSION} \
-  && mv /root/go/bin/conversion-gen /usr/bin/conversion-gen
+    && mv /root/go/bin/conversion-gen /usr/bin/conversion-gen
 WORKDIR /src
 COPY ./go.mod ./
 COPY ./go.sum ./
@@ -65,10 +65,10 @@ ARG REGISTRY_AND_USERNAME
 ARG NAME
 ARG TAG
 RUN cd config/manager \
-  && kustomize edit set image controller=${REGISTRY_AND_USERNAME}/${NAME}:${TAG} \
-  && cd - \
-  && kustomize build config/default >/control-plane-components.yaml \
-  && cp config/metadata/metadata.yaml /metadata.yaml
+    && kustomize edit set image controller=${REGISTRY_AND_USERNAME}/${NAME}:${TAG} \
+    && cd - \
+    && kustomize build config/default >/control-plane-components.yaml \
+    && cp config/metadata/metadata.yaml /metadata.yaml
 
 FROM scratch AS release
 ARG TAG

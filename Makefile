@@ -24,15 +24,34 @@ GO_LDFLAGS += -s -w
 
 ARTIFACTS := _out
 
-TOOLS ?= ghcr.io/siderolabs/tools:v1.13.0
-PKGS ?= v1.13.0
+TOOLS ?= ghcr.io/siderolabs/tools:v1.13.0-beta.0-3-gc192d81
+PKGS ?= v1.13.0-beta.0-14-gb121566
 
-BUILD := docker buildx build
-PLATFORM ?= linux/amd64
+CONTAINER_ENGINE ?= docker
+
+ifeq ($(CONTAINER_ENGINE),podman)
+BUILD := $(CONTAINER_ENGINE) build
+LOAD_ARG :=
+PROGRESS ?=
+PUSH_ARG :=
+FORMAT_ARG := --format=docker
+else
+BUILD := $(CONTAINER_ENGINE) buildx build
+LOAD_ARG := --load
 PROGRESS ?= auto
+PUSH_ARG := --push=$(PUSH)
+FORMAT_ARG :=
+endif
+
+PLATFORM ?= linux/amd64
 PUSH ?= false
 COMMON_ARGS := --file=Dockerfile
+ifneq ($(PROGRESS),)
 COMMON_ARGS += --progress=$(PROGRESS)
+endif
+ifneq ($(FORMAT_ARG),)
+COMMON_ARGS += $(FORMAT_ARG)
+endif
 COMMON_ARGS += --platform=$(PLATFORM)
 COMMON_ARGS += --build-arg=REGISTRY_AND_USERNAME=$(REGISTRY_AND_USERNAME)
 COMMON_ARGS += --build-arg=NAME=$(NAME)
@@ -59,7 +78,17 @@ target-%: ## Builds the specified target defined in the Dockerfile. The build re
 		$(TARGET_ARGS) .
 
 local-%: ## Builds the specified target defined in the Dockerfile using the local output type. The build result will be output to the specified local destination.
+ifeq ($(CONTAINER_ENGINE),podman)
+	@$(MAKE) target-$* TARGET_ARGS="--tag $(NAME)-$*_tmp $(TARGET_ARGS)"
+	@$(CONTAINER_ENGINE) create --name $(NAME)-$*_tmp_container $(NAME)-$*_tmp
+	@mkdir -p $(DEST)
+	@$(CONTAINER_ENGINE) export $(NAME)-$*_tmp_container | tar -x -C $(DEST)
+	@-$(CONTAINER_ENGINE) rm -f $(NAME)-$*_tmp_container >/dev/null 2>&1
+	@-$(CONTAINER_ENGINE) rmi -f $(NAME)-$*_tmp >/dev/null 2>&1
+	@-rm -f $(DEST)/.dockerenv $(DEST)/.containerenv
+else
 	@$(MAKE) target-$* TARGET_ARGS="--output=type=local,dest=$(DEST) $(TARGET_ARGS)"
+endif
 
 docker-%: ## Builds the specified target defined in the Dockerfile using the docker output type. The build result will be loaded into docker.
 	@$(MAKE) target-$* TARGET_ARGS="--tag $(REGISTRY_AND_USERNAME)/$(NAME):$(TAG) $(TARGET_ARGS)"
@@ -94,7 +123,12 @@ generate: ## Generate source code.
 
 .PHONY: container
 container: generate ## Build the container image.
-	@$(MAKE) docker-$@ TARGET_ARGS="--push=$(PUSH)"
+	@$(MAKE) docker-$@ TARGET_ARGS="$(PUSH_ARG)"
+ifeq ($(CONTAINER_ENGINE),podman)
+ifeq ($(PUSH),true)
+	@$(CONTAINER_ENGINE) push $(REGISTRY_AND_USERNAME)/$(NAME):$(TAG)
+endif
+endif
 
 .PHONY: manifests
 manifests: ## Generate manifests (e.g. CRD, RBAC, etc.).
@@ -127,15 +161,17 @@ uninstall: manifests ## Uninstall CRDs from a cluster.
 
 .PHONY: run
 run: install ## Run the controller locally. This is for testing purposes only.
-	@$(MAKE) docker-container TARGET_ARGS="--load"
-	@docker run --rm -it --net host -v $(PWD):/src -v $(KUBECONFIG):/root/.kube/config -e KUBECONFIG=/root/.kube/config $(REGISTRY_AND_USERNAME)/$(NAME):$(TAG)
+	@$(MAKE) docker-container TARGET_ARGS="$(LOAD_ARG)"
+	@$(CONTAINER_ENGINE) run --rm -it --net host -v $(PWD):/src -v $(KUBECONFIG):/root/.kube/config -e KUBECONFIG=/root/.kube/config $(REGISTRY_AND_USERNAME)/$(NAME):$(TAG)
 
 .PHONY: clean
 clean:
 	@rm -rf $(ARTIFACTS)
 
+HOST_OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
+HOST_ARCH := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
 integration-test-build:
-	@$(MAKE) local-integration-test DEST=./_out/ PLATFORM=linux/amd64
+	@$(MAKE) local-integration-test DEST=./_out/ TARGET_ARGS="--build-arg=TEST_GOOS=$(HOST_OS) --build-arg=TEST_GOARCH=$(HOST_ARCH)"
 
 .PHONY: integration-test
 integration-test: integration-test-build
@@ -150,5 +186,5 @@ check-dirty: ## Verifies that source tree is not dirty
 
 .PHONY: rekres
 rekres:
-	@docker pull $(KRES_IMAGE)
-	@docker run --rm --net=host --user $(shell id -u):$(shell id -g) -v $(PWD):/src -w /src -e GITHUB_TOKEN $(KRES_IMAGE)
+	@$(CONTAINER_ENGINE) pull $(KRES_IMAGE)
+	@$(CONTAINER_ENGINE) run --rm --net=host --user $(shell id -u):$(shell id -g) -v $(PWD):/src -w /src -e GITHUB_TOKEN $(KRES_IMAGE)
