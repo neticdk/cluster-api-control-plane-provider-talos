@@ -27,13 +27,13 @@ func (e *errServiceUnhealthy) Error() string {
 	return fmt.Sprintf("Service %s is unhealthy: %s", e.service, e.reason)
 }
 
-func (r *TalosControlPlaneReconciler) nodesHealthcheck(ctx context.Context, tcp *controlplanev1.TalosControlPlane, machines []clusterv1.Machine) error {
+func (r *TalosControlPlaneReconciler) nodesHealthcheck(ctx context.Context, tcp *controlplanev1.TalosControlPlane, machines []*clusterv1.Machine) error {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
 
 	for _, machine := range machines {
 		if err := func() error {
-			client, err := r.talosconfigForMachines(ctx, tcp, machine)
+			client, err := r.talosconfigForMachines(ctx, tcp, *machine)
 			if err != nil {
 				return err
 			}
@@ -65,7 +65,7 @@ func (r *TalosControlPlaneReconciler) nodesHealthcheck(ctx context.Context, tcp 
 	return nil
 }
 
-func (r *TalosControlPlaneReconciler) ensureNodesBooted(ctx context.Context, tcp *controlplanev1.TalosControlPlane, machines []clusterv1.Machine) error {
+func (r *TalosControlPlaneReconciler) ensureNodesBooted(ctx context.Context, tcp *controlplanev1.TalosControlPlane, machines []*clusterv1.Machine) error {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
 
@@ -81,7 +81,7 @@ func (r *TalosControlPlaneReconciler) ensureNodesBooted(ctx context.Context, tcp
 
 	// watch events from all machines into a single channel
 	for _, machine := range machines {
-		client, err := r.talosconfigForMachines(ctx, tcp, machine)
+		client, err := r.talosconfigForMachines(ctx, tcp, *machine)
 		if err != nil {
 			return err
 		}

@@ -17,11 +17,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (r *TalosControlPlaneReconciler) etcdHealthcheck(ctx context.Context, tcp *controlplanev1.TalosControlPlane, ownedMachines []clusterv1.Machine) error {
+func (r *TalosControlPlaneReconciler) etcdHealthcheck(ctx context.Context, tcp *controlplanev1.TalosControlPlane, ownedMachines []*clusterv1.Machine) error {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
 
-	machines := []clusterv1.Machine{}
+	machines := []*clusterv1.Machine{}
 
 	for _, machine := range ownedMachines {
 		if machine.ObjectMeta.DeletionTimestamp.IsZero() &&
@@ -45,7 +45,7 @@ func (r *TalosControlPlaneReconciler) etcdHealthcheck(ctx context.Context, tcp *
 	for i, machine := range machines {
 		// loop for each machine, the client created has endpoints which point to a single machine
 		if err := func() error {
-			c, err := r.talosconfigForMachines(ctx, tcp, machine)
+			c, err := r.talosconfigForMachines(ctx, tcp, *machine)
 			if err != nil {
 				return err
 			}
