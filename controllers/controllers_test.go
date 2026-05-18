@@ -1174,6 +1174,112 @@ func (suite *ControllersSuite) TestTalosconfigForMachinesWithInitConfig() {
 	tClient, err := r.TalosconfigForMachines(suite.ctx, tcp, *machine)
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(tClient).ToNot(BeNil())
+
+	g.Expect(tClient.GetEndpoints()).To(ContainElements("10.0.0.1"))
+}
+
+func (suite *ControllersSuite) TestTalosconfigFromWorkloadClusterWithEndpoint() {
+	g := NewWithT(suite.T())
+	fakeClient := newFakeClient()
+
+	cluster, tcp, _ := suite.setupCluster(fakeClient, "test-talosconfig-workload-endpoint", ptr.To[int32](1))
+
+	patchHelper, err := patch.NewHelper(tcp, fakeClient)
+	g.Expect(err).To(BeNil())
+
+	tcp.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+		Host: "1.2.3.4",
+		Port: 6443,
+	}
+	tcp.Spec.ControlPlaneConfig.InitConfig = bootstrapv1beta1.TalosConfigSpec{
+		Data: "some-init-config",
+	}
+	g.Expect(patchHelper.Patch(suite.ctx, tcp)).To(Succeed())
+
+	machine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: cluster.Namespace,
+			Name:      "machine-1",
+		},
+		Status: clusterv1.MachineStatus{
+			NodeRef: clusterv1.MachineNodeReference{
+				Name: "node-1",
+			},
+		},
+	}
+
+	node := &corev1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "node-1",
+		},
+		Status: corev1.NodeStatus{
+			Addresses: []corev1.NodeAddress{
+				{
+					Type:    corev1.NodeInternalIP,
+					Address: "10.0.0.1",
+				},
+			},
+		},
+	}
+
+	// Create a minimal talosconfig secret
+	g.Expect(createSecrets(suite.ctx, fakeClient, cluster, suite.secretsBundle, "10.0.0.1")).To(Succeed())
+
+	g.Expect(fakeClient.Create(suite.ctx, machine)).To(Succeed())
+	g.Expect(fakeClient.Create(suite.ctx, node)).To(Succeed())
+
+	r := newReconciler(fakeClient, withCluster(util.ObjectKey(cluster)))
+
+	// This should call talosconfigFromWorkloadCluster because InitConfig is set.
+	tClient, err := r.TalosconfigForMachines(suite.ctx, tcp, *machine)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(tClient).ToNot(BeNil())
+
+	g.Expect(tClient.GetEndpoints()).To(ContainElements("1.2.3.4", "10.0.0.1"))
+}
+
+func (suite *ControllersSuite) TestTalosconfigForMachinesWithControlPlaneEndpoint() {
+	g := NewWithT(suite.T())
+	fakeClient := newFakeClient()
+
+	cluster, tcp, _ := suite.setupCluster(fakeClient, "test-talosconfig-endpoint", ptr.To[int32](1))
+
+	patchHelper, err := patch.NewHelper(tcp, fakeClient)
+	g.Expect(err).To(BeNil())
+
+	tcp.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+		Host: "1.2.3.4",
+		Port: 6443,
+	}
+	g.Expect(patchHelper.Patch(suite.ctx, tcp)).To(Succeed())
+
+	machine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: cluster.Namespace,
+			Name:      "machine-1",
+		},
+		Status: clusterv1.MachineStatus{
+			Addresses: []clusterv1.MachineAddress{
+				{
+					Type:    clusterv1.MachineInternalIP,
+					Address: "10.0.0.1",
+				},
+			},
+		},
+	}
+
+	// Create a minimal talosconfig secret
+	g.Expect(createSecrets(suite.ctx, fakeClient, cluster, suite.secretsBundle, "10.0.0.1")).To(Succeed())
+
+	g.Expect(fakeClient.Create(suite.ctx, machine)).To(Succeed())
+
+	r := newReconciler(fakeClient, withCluster(util.ObjectKey(cluster)))
+
+	tClient, err := r.TalosconfigForMachines(suite.ctx, tcp, *machine)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(tClient).ToNot(BeNil())
+
+	g.Expect(tClient.GetEndpoints()).To(ContainElements("1.2.3.4", "10.0.0.1"))
 }
 
 func TestSuite(t *testing.T) {

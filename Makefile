@@ -7,7 +7,7 @@ REGISTRY_AND_USERNAME := $(REGISTRY)/$(USERNAME)
 NAME := cluster-api-control-plane-talos-controller
 WITH_RACE ?= false
 CGO_ENABLED = 0
-TESTPKGS ?= ./controllers/...
+TESTPKGS ?= ./api/... ./controllers/...
 
 KRES_IMAGE ?= ghcr.io/siderolabs/kres:latest
 

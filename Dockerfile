@@ -52,7 +52,7 @@ COPY --from=generate-build /src/api /api
 # runs unit-tests
 FROM build AS unit-tests-run
 ARG TESTPKGS
-RUN --mount=type=cache,target=/root/.cache --mount=type=cache,target=/tmp go test -v -covermode=atomic -coverprofile=coverage.txt -coverpkg=${TESTPKGS} -count 1 ${TESTPKGS}
+RUN --mount=type=cache,target=/root/.cache --mount=type=cache,target=/tmp go test -v -covermode=atomic -coverprofile=coverage.txt -coverpkg=$(echo ${TESTPKGS} | tr ' ' ',') -count 1 ${TESTPKGS}
 
 FROM scratch AS unit-tests
 COPY --from=unit-tests-run /src/coverage.txt /coverage.txt

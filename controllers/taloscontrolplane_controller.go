@@ -198,7 +198,7 @@ func (r *TalosControlPlaneReconciler) reconcile(ctx context.Context, cluster *cl
 	}
 
 	// If ControlPlaneEndpoint is not set, return early
-	if !cluster.Spec.ControlPlaneEndpoint.IsValid() {
+	if !tcp.Spec.ControlPlaneEndpoint.IsValid() && !cluster.Spec.ControlPlaneEndpoint.IsValid() {
 		logger.Info("cluster does not yet have a ControlPlaneEndpoint defined")
 
 		return ctrl.Result{}, nil
@@ -745,8 +745,11 @@ func (r *TalosControlPlaneReconciler) reconcileExternalReference(ctx context.Con
 }
 
 func (r *TalosControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, cp *ControlPlane) (ctrl.Result, error) {
-	endpoint := cp.Cluster.Spec.ControlPlaneEndpoint
-	if endpoint.IsZero() {
+	endpoint := cp.TCP.Spec.ControlPlaneEndpoint
+	if !endpoint.IsValid() {
+		endpoint = cp.Cluster.Spec.ControlPlaneEndpoint
+	}
+	if !endpoint.IsValid() {
 		return ctrl.Result{}, nil
 	}
 
