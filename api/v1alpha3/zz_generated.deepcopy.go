@@ -140,6 +140,7 @@ func (in *TalosControlPlaneSpec) DeepCopyInto(out *TalosControlPlaneSpec) {
 		**out = **in
 	}
 	out.InfrastructureTemplate = in.InfrastructureTemplate
+	out.ControlPlaneEndpoint = in.ControlPlaneEndpoint
 	in.ControlPlaneConfig.DeepCopyInto(&out.ControlPlaneConfig)
 	if in.RolloutStrategy != nil {
 		in, out := &in.RolloutStrategy, &out.RolloutStrategy

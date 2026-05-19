@@ -51,6 +51,10 @@ type TalosControlPlaneSpec struct {
 	// offered by an infrastructure provider.
 	InfrastructureTemplate corev1.ObjectReference `json:"infrastructureTemplate"`
 
+	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
+	// +optional
+	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
+
 	// ControlPlaneConfig is a two TalosConfigSpecs
 	// to use for initializing and joining machines to the control plane.
 	ControlPlaneConfig ControlPlaneConfig `json:"controlPlaneConfig"`

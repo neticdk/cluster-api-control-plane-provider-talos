@@ -59,6 +59,10 @@ func (r *TalosControlPlaneReconciler) talosconfigForMachines(ctx context.Context
 
 	addrList := []string{}
 
+	if tcp.Spec.ControlPlaneEndpoint.IsValid() {
+		addrList = append(addrList, tcp.Spec.ControlPlaneEndpoint.Host)
+	}
+
 	var talosconfigSecret corev1.Secret
 
 	if err := r.Get(ctx,
@@ -112,6 +116,10 @@ func (r *TalosControlPlaneReconciler) talosconfigFromWorkloadCluster(ctx context
 	}
 
 	addrList := []string{}
+
+	if tcp.Spec.ControlPlaneEndpoint.IsValid() {
+		addrList = append(addrList, tcp.Spec.ControlPlaneEndpoint.Host)
+	}
 
 	var t *talosconfig.Config
 

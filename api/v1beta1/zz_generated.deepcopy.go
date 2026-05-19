@@ -269,6 +269,7 @@ func (in *TalosControlPlaneSpec) DeepCopyInto(out *TalosControlPlaneSpec) {
 		*out = new(MachineNamingStrategy)
 		**out = **in
 	}
+	out.ControlPlaneEndpoint = in.ControlPlaneEndpoint
 	in.ControlPlaneConfig.DeepCopyInto(&out.ControlPlaneConfig)
 	if in.RolloutStrategy != nil {
 		in, out := &in.RolloutStrategy, &out.RolloutStrategy
@@ -447,6 +448,7 @@ func (in *TalosControlPlaneTemplateResourceSpec) DeepCopyInto(out *TalosControlP
 		*out = new(MachineNamingStrategy)
 		**out = **in
 	}
+	out.ControlPlaneEndpoint = in.ControlPlaneEndpoint
 	in.ControlPlaneConfig.DeepCopyInto(&out.ControlPlaneConfig)
 	if in.RolloutStrategy != nil {
 		in, out := &in.RolloutStrategy, &out.RolloutStrategy

@@ -106,6 +106,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*corev1beta1.APIEndpoint)(nil), (*v1beta2.APIEndpoint)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_APIEndpoint_To_v1beta2_APIEndpoint(a.(*corev1beta1.APIEndpoint), b.(*v1beta2.APIEndpoint), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*corev1beta1.Condition)(nil), (*v1.Condition)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_Condition_To_v1_Condition(a.(*corev1beta1.Condition), b.(*v1.Condition), scope)
 	}); err != nil {
@@ -123,6 +128,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*v1beta1.TalosControlPlaneStatus)(nil), (*TalosControlPlaneStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_TalosControlPlaneStatus_To_v1alpha3_TalosControlPlaneStatus(a.(*v1beta1.TalosControlPlaneStatus), b.(*TalosControlPlaneStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta2.APIEndpoint)(nil), (*corev1beta1.APIEndpoint)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta2_APIEndpoint_To_v1beta1_APIEndpoint(a.(*v1beta2.APIEndpoint), b.(*corev1beta1.APIEndpoint), scope)
 	}); err != nil {
 		return err
 	}
@@ -284,6 +294,9 @@ func autoConvert_v1alpha3_TalosControlPlaneSpec_To_v1beta1_TalosControlPlaneSpec
 	out.Replicas = (*int32)(unsafe.Pointer(in.Replicas))
 	out.Version = in.Version
 	// WARNING: in.InfrastructureTemplate requires manual conversion: does not exist in peer-type
+	if err := Convert_v1beta1_APIEndpoint_To_v1beta2_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
+		return err
+	}
 	if err := Convert_v1alpha3_ControlPlaneConfig_To_v1beta1_ControlPlaneConfig(&in.ControlPlaneConfig, &out.ControlPlaneConfig, s); err != nil {
 		return err
 	}
@@ -296,6 +309,9 @@ func autoConvert_v1beta1_TalosControlPlaneSpec_To_v1alpha3_TalosControlPlaneSpec
 	out.Version = in.Version
 	// WARNING: in.MachineTemplate requires manual conversion: does not exist in peer-type
 	// WARNING: in.MachineNamingStrategy requires manual conversion: does not exist in peer-type
+	if err := Convert_v1beta2_APIEndpoint_To_v1beta1_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
+		return err
+	}
 	if err := Convert_v1beta1_ControlPlaneConfig_To_v1alpha3_ControlPlaneConfig(&in.ControlPlaneConfig, &out.ControlPlaneConfig, s); err != nil {
 		return err
 	}
