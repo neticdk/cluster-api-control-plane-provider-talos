@@ -151,6 +151,7 @@ func autoConvert_v1alpha3_ControlPlaneConfig_To_v1beta1_ControlPlaneConfig(in *C
 	if err := Convert_v1alpha3_TalosConfigSpec_To_v1beta1_TalosConfigSpec(&in.ControlPlaneConfig, &out.ControlPlaneConfig, s); err != nil {
 		return err
 	}
+	out.Variables = *(*[]apiv1beta1.Variable)(unsafe.Pointer(&in.Variables))
 	return nil
 }
 
@@ -166,6 +167,7 @@ func autoConvert_v1beta1_ControlPlaneConfig_To_v1alpha3_ControlPlaneConfig(in *v
 	if err := Convert_v1beta1_TalosConfigSpec_To_v1alpha3_TalosConfigSpec(&in.ControlPlaneConfig, &out.ControlPlaneConfig, s); err != nil {
 		return err
 	}
+	out.Variables = *(*[]apiv1alpha3.Variable)(unsafe.Pointer(&in.Variables))
 	return nil
 }
 
