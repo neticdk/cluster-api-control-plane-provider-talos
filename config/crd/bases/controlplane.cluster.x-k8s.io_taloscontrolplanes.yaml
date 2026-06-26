@@ -113,6 +113,44 @@ spec:
                         type: array
                       talosVersion:
                         type: string
+                      variables:
+                        description: Variables is a list of variables to resolve from
+                          Secrets.
+                        items:
+                          description: Variable defines a variable name and where
+                            to resolve its value from.
+                          properties:
+                            name:
+                              description: Name of the variable to be used in templates.
+                                Must be a valid Go template identifier (alphanumeric
+                                and underscores, starting with a letter or underscore).
+                              pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
+                              type: string
+                            valueFrom:
+                              description: ValueFrom defines the source of the variable's
+                                value.
+                              properties:
+                                secretKeyRef:
+                                  description: SecretKeyRef selects a key of a Secret
+                                    in the TalosConfig's namespace.
+                                  properties:
+                                    key:
+                                      description: Key of the Secret to select.
+                                      type: string
+                                    name:
+                                      description: Name of the Secret. Go template
+                                        syntax like {{ .Machine.Name }} is supported.
+                                      type: string
+                                  required:
+                                  - key
+                                  - name
+                                  type: object
+                              type: object
+                          required:
+                          - name
+                          - valueFrom
+                          type: object
+                        type: array
                     required:
                     - generateType
                     type: object
@@ -159,9 +197,83 @@ spec:
                         type: array
                       talosVersion:
                         type: string
+                      variables:
+                        description: Variables is a list of variables to resolve from
+                          Secrets.
+                        items:
+                          description: Variable defines a variable name and where
+                            to resolve its value from.
+                          properties:
+                            name:
+                              description: Name of the variable to be used in templates.
+                                Must be a valid Go template identifier (alphanumeric
+                                and underscores, starting with a letter or underscore).
+                              pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
+                              type: string
+                            valueFrom:
+                              description: ValueFrom defines the source of the variable's
+                                value.
+                              properties:
+                                secretKeyRef:
+                                  description: SecretKeyRef selects a key of a Secret
+                                    in the TalosConfig's namespace.
+                                  properties:
+                                    key:
+                                      description: Key of the Secret to select.
+                                      type: string
+                                    name:
+                                      description: Name of the Secret. Go template
+                                        syntax like {{ .Machine.Name }} is supported.
+                                      type: string
+                                  required:
+                                  - key
+                                  - name
+                                  type: object
+                              type: object
+                          required:
+                          - name
+                          - valueFrom
+                          type: object
+                        type: array
                     required:
                     - generateType
                     type: object
+                  variables:
+                    items:
+                      description: Variable defines a variable name and where to resolve
+                        its value from.
+                      properties:
+                        name:
+                          description: Name of the variable to be used in templates.
+                            Must be a valid Go template identifier (alphanumeric and
+                            underscores, starting with a letter or underscore).
+                          pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
+                          type: string
+                        valueFrom:
+                          description: ValueFrom defines the source of the variable's
+                            value.
+                          properties:
+                            secretKeyRef:
+                              description: SecretKeyRef selects a key of a Secret
+                                in the TalosConfig's namespace.
+                              properties:
+                                key:
+                                  description: Key of the Secret to select.
+                                  type: string
+                                name:
+                                  description: Name of the Secret. Go template syntax
+                                    like {{ .Machine.Name }} is supported.
+                                  type: string
+                              required:
+                              - key
+                              - name
+                              type: object
+                          type: object
+                      required:
+                      - name
+                      - valueFrom
+                      type: object
+                    type: array
                 required:
                 - controlplane
                 type: object
@@ -586,6 +698,44 @@ spec:
                           Defaults to the latest supported version if unspecified.
                           It is recommended to set this field explicitly to avoid unexpected issues during provider upgrades.
                         type: string
+                      variables:
+                        description: Variables is a list of variables to resolve from
+                          Secrets.
+                        items:
+                          description: Variable defines a variable name and where
+                            to resolve its value from.
+                          properties:
+                            name:
+                              description: Name of the variable to be used in templates.
+                                Must be a valid Go template identifier (alphanumeric
+                                and underscores, starting with a letter or underscore).
+                              pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
+                              type: string
+                            valueFrom:
+                              description: ValueFrom defines the source of the variable's
+                                value.
+                              properties:
+                                secretKeyRef:
+                                  description: SecretKeyRef selects a key of a Secret
+                                    in the TalosConfig's namespace.
+                                  properties:
+                                    key:
+                                      description: Key of the Secret to select.
+                                      type: string
+                                    name:
+                                      description: Name of the Secret. Go template
+                                        syntax like {{ .Machine.Name }} is supported.
+                                      type: string
+                                  required:
+                                  - key
+                                  - name
+                                  type: object
+                              type: object
+                          required:
+                          - name
+                          - valueFrom
+                          type: object
+                        type: array
                     required:
                     - generateType
                     type: object
@@ -646,9 +796,83 @@ spec:
                           Defaults to the latest supported version if unspecified.
                           It is recommended to set this field explicitly to avoid unexpected issues during provider upgrades.
                         type: string
+                      variables:
+                        description: Variables is a list of variables to resolve from
+                          Secrets.
+                        items:
+                          description: Variable defines a variable name and where
+                            to resolve its value from.
+                          properties:
+                            name:
+                              description: Name of the variable to be used in templates.
+                                Must be a valid Go template identifier (alphanumeric
+                                and underscores, starting with a letter or underscore).
+                              pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
+                              type: string
+                            valueFrom:
+                              description: ValueFrom defines the source of the variable's
+                                value.
+                              properties:
+                                secretKeyRef:
+                                  description: SecretKeyRef selects a key of a Secret
+                                    in the TalosConfig's namespace.
+                                  properties:
+                                    key:
+                                      description: Key of the Secret to select.
+                                      type: string
+                                    name:
+                                      description: Name of the Secret. Go template
+                                        syntax like {{ .Machine.Name }} is supported.
+                                      type: string
+                                  required:
+                                  - key
+                                  - name
+                                  type: object
+                              type: object
+                          required:
+                          - name
+                          - valueFrom
+                          type: object
+                        type: array
                     required:
                     - generateType
                     type: object
+                  variables:
+                    items:
+                      description: Variable defines a variable name and where to resolve
+                        its value from.
+                      properties:
+                        name:
+                          description: Name of the variable to be used in templates.
+                            Must be a valid Go template identifier (alphanumeric and
+                            underscores, starting with a letter or underscore).
+                          pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
+                          type: string
+                        valueFrom:
+                          description: ValueFrom defines the source of the variable's
+                            value.
+                          properties:
+                            secretKeyRef:
+                              description: SecretKeyRef selects a key of a Secret
+                                in the TalosConfig's namespace.
+                              properties:
+                                key:
+                                  description: Key of the Secret to select.
+                                  type: string
+                                name:
+                                  description: Name of the Secret. Go template syntax
+                                    like {{ .Machine.Name }} is supported.
+                                  type: string
+                              required:
+                              - key
+                              - name
+                              type: object
+                          type: object
+                      required:
+                      - name
+                      - valueFrom
+                      type: object
+                    type: array
                 required:
                 - controlplane
                 type: object

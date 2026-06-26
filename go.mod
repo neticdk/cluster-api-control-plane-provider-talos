@@ -11,7 +11,7 @@ require (
 	github.com/onsi/gomega v1.39.1
 	github.com/pkg/errors v0.9.1
 	github.com/siderolabs/capi-utils v0.0.0-20260203103127-995e8c672207
-	github.com/siderolabs/cluster-api-bootstrap-provider-talos v0.7.0-alpha.1.0.20260417161437-1f98f533c6f6
+	github.com/siderolabs/cluster-api-bootstrap-provider-talos v0.7.0-alpha.3
 	github.com/siderolabs/crypto v0.6.5
 	github.com/siderolabs/gen v0.8.6
 	github.com/siderolabs/go-retry v0.3.3
@@ -158,3 +158,5 @@ require (
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
 )
+
+replace github.com/siderolabs/cluster-api-bootstrap-provider-talos => github.com/neticdk/cluster-api-bootstrap-provider-talos v0.7.0-alpha.3

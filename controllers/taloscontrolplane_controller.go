@@ -589,6 +589,10 @@ func (r *TalosControlPlaneReconciler) generateTalosConfig(ctx context.Context, t
 		Spec: *spec,
 	}
 
+	if len(tcp.Spec.ControlPlaneConfig.Variables) > 0 {
+		bootstrapConfig.Spec.Variables = append(append([]cabptv1.Variable(nil), spec.Variables...), tcp.Spec.ControlPlaneConfig.Variables...)
+	}
+
 	if err := r.Client.Create(ctx, bootstrapConfig); err != nil {
 		return nil, errors.Wrap(err, "Failed to create bootstrap configuration")
 	}

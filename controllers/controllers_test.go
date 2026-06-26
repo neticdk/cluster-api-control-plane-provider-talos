@@ -1282,6 +1282,58 @@ func (suite *ControllersSuite) TestTalosconfigForMachinesWithControlPlaneEndpoin
 	g.Expect(tClient.GetEndpoints()).To(ContainElements("1.2.3.4", "10.0.0.1"))
 }
 
+func (suite *ControllersSuite) TestGenerateTalosConfigWithVariables() {
+	g := NewWithT(suite.T())
+	fakeClient := newFakeClient()
+
+	cluster, tcp, _ := suite.setupCluster(fakeClient, "test-generate-talosconfig-variables", ptr.To[int32](1))
+
+	// Define some variables in CACPPT ControlPlaneConfig level
+	tcp.Spec.ControlPlaneConfig.Variables = []bootstrapv1beta1.Variable{
+		{
+			Name: "CP_LEVEL_VAR",
+			ValueFrom: bootstrapv1beta1.VariableSource{
+				SecretKeyRef: &bootstrapv1beta1.SecretKeySelector{
+					Name: "cp-secret",
+					Key:  "key",
+				},
+			},
+		},
+	}
+
+	// Define some variables in CABPT TalosConfigSpec level too
+	bootstrapConfigSpec := &bootstrapv1beta1.TalosConfigSpec{
+		GenerateType: "controlplane",
+		Variables: []bootstrapv1beta1.Variable{
+			{
+				Name: "SPEC_LEVEL_VAR",
+				ValueFrom: bootstrapv1beta1.VariableSource{
+					SecretKeyRef: &bootstrapv1beta1.SecretKeySelector{
+						Name: "spec-secret",
+						Key:  "key",
+					},
+				},
+			},
+		},
+	}
+
+	r := newReconciler(fakeClient, withCluster(util.ObjectKey(cluster)))
+
+	bootstrapRef, err := r.GenerateTalosConfig(suite.ctx, tcp, "test-machine", bootstrapConfigSpec)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(bootstrapRef).ToNot(BeNil())
+
+	// Fetch the generated TalosConfig
+	talosConfig := &bootstrapv1beta1.TalosConfig{}
+	err = fakeClient.Get(suite.ctx, client.ObjectKey{Namespace: tcp.Namespace, Name: "test-machine"}, talosConfig)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	// It should have merged both the spec-level and the controlplane-level variables!
+	g.Expect(talosConfig.Spec.Variables).To(HaveLen(2))
+	g.Expect(talosConfig.Spec.Variables[0].Name).To(Equal("SPEC_LEVEL_VAR"))
+	g.Expect(talosConfig.Spec.Variables[1].Name).To(Equal("CP_LEVEL_VAR"))
+}
+
 func TestSuite(t *testing.T) {
 	suite.Run(t, &ControllersSuite{})
 }

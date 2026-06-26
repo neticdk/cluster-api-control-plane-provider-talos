@@ -7,6 +7,7 @@ package controllers
 import (
 	"context"
 
+	cabptv1 "github.com/siderolabs/cluster-api-bootstrap-provider-talos/api/v1beta1"
 	controlplanev1 "github.com/siderolabs/cluster-api-control-plane-provider-talos/api/v1beta1"
 	talosclient "github.com/siderolabs/talos/pkg/machinery/client"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -26,4 +27,9 @@ func (r *TalosControlPlaneReconciler) ReconcileMachineConditions(ctx context.Con
 // TalosconfigForMachines is a test-only export of the private talosconfigForMachines method.
 func (r *TalosControlPlaneReconciler) TalosconfigForMachines(ctx context.Context, tcp *controlplanev1.TalosControlPlane, machines ...clusterv1.Machine) (*talosclient.Client, error) {
 	return r.talosconfigForMachines(ctx, tcp, machines...)
+}
+
+// GenerateTalosConfig is a test-only export of the private generateTalosConfig method.
+func (r *TalosControlPlaneReconciler) GenerateTalosConfig(ctx context.Context, tcp *controlplanev1.TalosControlPlane, name string, spec *cabptv1.TalosConfigSpec) (*clusterv1.ContractVersionedObjectReference, error) {
+	return r.generateTalosConfig(ctx, tcp, name, spec)
 }
