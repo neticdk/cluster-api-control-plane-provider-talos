@@ -21,7 +21,7 @@ function changelog {
 function release-notes {
   release-tool "${2}" --gfm > "${1}"
 
-  size=$(stat -c%s "${1}")
+  size=$(wc -c < "${1}")
 
   if (( size > 25000 )); then
     echo "Release notes size exceeds GitHub limit of 25000 bytes"

@@ -192,6 +192,8 @@ github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee h1:W5t00kpgFd
 github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
+github.com/neticdk/cluster-api-bootstrap-provider-talos v0.7.0-alpha.3 h1:FuGwT/FvdrCgUZJsgG+WjKl1OiuHsQ5TtkpvOU+aIeQ=
+github.com/neticdk/cluster-api-bootstrap-provider-talos v0.7.0-alpha.3/go.mod h1:uMvnIUK/BZChnl92XuVVlrLiWWnslhwp3ZCoHCqyQWQ=
 github.com/onsi/ginkgo/v2 v2.28.1 h1:S4hj+HbZp40fNKuLUQOYLDgZLwNUVn19N3Atb98NCyI=
 github.com/onsi/ginkgo/v2 v2.28.1/go.mod h1:CLtbVInNckU3/+gC8LzkGUb9oF+e8W8TdUsxPwvdOgE=
 github.com/onsi/gomega v1.39.1 h1:1IJLAad4zjPn2PsnhH70V4DKRFlrCzGBNrNaru+Vf28=
@@ -237,8 +239,6 @@ github.com/shopspring/decimal v1.4.0 h1:bxl37RwXBklmTi0C79JfXCEBD1cqqHt0bbgBAGFp
 github.com/shopspring/decimal v1.4.0/go.mod h1:gawqmDU56v4yIKSwfBSFip1HdCCXN8/+DMd9qYNcwME=
 github.com/siderolabs/capi-utils v0.0.0-20260203103127-995e8c672207 h1:zD7M0DEW8Dt+wvWv5oBpHAvEMDl4f+SSxpmIc8+2z9U=
 github.com/siderolabs/capi-utils v0.0.0-20260203103127-995e8c672207/go.mod h1:p5gfG8KQBG370hgijM2WT4GpWL63BPY7lBSHLdN1w4k=
-github.com/siderolabs/cluster-api-bootstrap-provider-talos v0.7.0-alpha.1.0.20260417161437-1f98f533c6f6 h1:DD3Kwn52kcLmMvjCYHb/Yi7TWfO+Wa+TgE8+vdey3hE=
-github.com/siderolabs/cluster-api-bootstrap-provider-talos v0.7.0-alpha.1.0.20260417161437-1f98f533c6f6/go.mod h1:ozW/k4/A4fJD4XJMNi5U9/ECV0ghXS/L1ywbwsJYFk4=
 github.com/siderolabs/crypto v0.6.5 h1:Elq5tpWP2ApZ4Y+Kg+eIDiiWbmriCPI1mjYIMwvsYkw=
 github.com/siderolabs/crypto v0.6.5/go.mod h1:QjVcrdJQE1sxhjHqieCgwGdlIYq/xCP2DL53Up8nbU4=
 github.com/siderolabs/gen v0.8.6 h1:pE6shuqov3L+5rEcAUJ/kY6iJofimljQw5G95P8a5c4=
